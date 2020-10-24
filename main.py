@@ -1,11 +1,14 @@
 # Jenny Ogden
-# Purpose: Write a program that connects to the SQL database, Pets, reads in the data and
-# prints out information regarding your choice of pet.
+# Purpose: Upgrade Pet Chooser
+# Write a program that connects to the SQL database, Pets, and reads in the data.
+# Print out information regarding your choice of pet and allow user to alter name and age of pet.
 
+# Import my class, Pet, and several other modules.
 import pymysql.cursors
-import pprint as pp
+from PetsClass import *
+import sys
 
-# Steps 1 and 2: Start and connect to the SQL Database, Pets:
+# Connect to the SQL database, Pets, and read in the appropriate data.
 try:
     myConnection = pymysql.connect(host='localhost',
                                    user='root',
@@ -15,16 +18,19 @@ try:
                                    cursorclass=pymysql.cursors.DictCursor)
 
 except Exception as e:
-    print(f"There was an error in the connection.")
+    print(f"There was an error in the connection. Exiting.")
+    print(e)
     print()
+    exit()
 
-# Step 3: Read in the data from the Pets database and write it into a list called PetsList.
-PetsList = []
+# Execute a query to read in the data and write each Pet() object to a dictionary, PetsDict.
+PetsDict = {}
 
 try:
     with myConnection.cursor() as cursor:
         SqlSelect = """
               select
+                pets.id as ID,
                 pets.name as PetName,
                 pets.age as PetAge, 
                 owners.name as OwnerName, 
@@ -33,88 +39,141 @@ try:
                         join types on pets.animal_type_id = types.id;
               """
 
-        # Execute select
+        # Execute the select statement
         cursor.execute(SqlSelect)
 
-        # Loop through all the results
+        # Loop through all the results, appending a new Pet object to our pets dictionary, PetsDict.
         # Print the data, nicely
         for row in cursor:
-            #print(row)
-            PetsList.append(row)
+            TempPet = Pet(ID = row['ID'],
+                          PetName = row['PetName'],
+                          PetAge = row['PetAge'],
+                          OwnerName = row['OwnerName'],
+                          PetType = row['PetType'])
+            PetsDict[row['ID']] = TempPet
 
-# If there is an exception, show what that is
-except:
-    print(f"An error has occurred while reading in the data")
+except Exception as e:
+    print(f"An error has occurred while reading in the data. Exiting now.")
+    print(TypeError)
+    print(e)
     print()
 
 # Close connection
 finally:
     myConnection.close()
 
-# Create a separate list for each pet that includes the following keys: PetName, PetAge, OwnerName, and PetType.
-HarveyList = list(PetsList[0].values())
-BooList = list(PetsList[1].values())
-MickeyList = list(PetsList[2].values())
-CallieList = list(PetsList[3].values())
-MaxList = list(PetsList[4].values())
-CharlieList = list(PetsList[5].values())
-KingList = list(PetsList[6].values())
-TweetyList = list(PetsList[7].values())
-BingoList = list(PetsList[8].values())
-
-# Import the class Pets from the Python file, PetsClass.
-from PetsClass import Pets
-
-# Step 4: Create one instance of a Pets class for each of the 9 pets listed in the Pets database.
-# Append the pet objects into a list, called ListOfObjects.
-ListOfObjects = []
-
-ListOfObjects.append(Pets(HarveyList[0], HarveyList[1], HarveyList[2], HarveyList[3]))
-ListOfObjects.append(Pets(BooList[0], BooList[1], BooList[2], BooList[3]))
-ListOfObjects.append(Pets(MickeyList[0], MickeyList[1], MickeyList[2], MickeyList[3]))
-ListOfObjects.append(Pets(CallieList[0], CallieList[1], CallieList[2], CallieList[3]))
-ListOfObjects.append(Pets(MaxList[0], MaxList[1], MaxList[2], MaxList[3]))
-ListOfObjects.append(Pets(CharlieList[0], CharlieList[1], CharlieList[2], CharlieList[3]))
-ListOfObjects.append(Pets(KingList[0], KingList[1], KingList[2], KingList[3]))
-ListOfObjects.append(Pets(TweetyList[0], TweetyList[1], TweetyList[2], TweetyList[3]))
-ListOfObjects.append(Pets(BingoList[0], BingoList[1], BingoList[2], BingoList[3]))
-
-# Step 5: Display a list of pet names, from the pet object instances:
+# Print a nice list of the pets.
+print("*".center(30, "*"))
+print(" Upgrade Pet Chooser ".center(30, "*"))
+print("*".center(30, "*"))
 print()
-print("List of Pet Names:")
-for obj in ListOfObjects:
-    print(obj.PetName)
 
-# Steps 6 and 7: Ask the user to choose a pet and print the specified pet's information.
-try:
-    while True:
-        print()
-        guess = str(input(
-        f"""Please choose a pet from the list below by typing its name:
-        [1] Harvey\t\t [2] Boo\t\t [3] Mickey
-        [4] Callie\t\t [5] Max\t\t [6] Charlie
-        [7] King\t\t [8] Tweety\t\t [9] Bingo
-        [Q] Quit\n\nChoice: """))
-        # Allow the user to quit instead of guessing a pet by entering 'q' or 'quit'
-        if guess.lower() in ("q", "quit"):
-            print(f"You are now exiting the pet chooser game!!")
-            break
+# Create a method that nicely prints the Pet IDs and Pet Names.
+def ListOfChoices():
+    for ID in PetsDict:
+        print(f"[{PetsDict[ID].GetID()}] {PetsDict[ID].GetPetName()}")
 
-        try:
-        # For each object in the Pet list, print out the attributes of name, type, age, and owner name.
-            for obj in ListOfObjects:
-                if guess.lower() == obj.PetName.lower():
-                    name = obj.PetName
-                    age = obj.PetAge
-                    owner = obj.OwnerName
-                    type = obj.PetType
-                    print(f"""You have chosen {obj.PetName}, the {obj.PetType}. {obj.PetName} is {obj.PetAge} years old.
-{obj.PetName}'s owner is {obj.OwnerName}.""")
-                    print()
-                    input(f"Press [ENTER] to continue.")
-        except:
-            print(f"ERROR: Invalid input! Please choose a pet from the list above.")
+    print("[Q] Quit")
+
+# Create a method that allows user to choose a pet and edit the name and age of pet
+def ChoosePet():
+    ListOfChoices()
+    print()
+    try:
+        Pet = input("Please choose from the list above by typing the pet's number: ")
+
+        # Quit nicely, if the player chooses to
+        if Pet.upper() == "Q":
+            print("Thank you for playing! Goodbye.")
+            sys.exit()
+
+        # If player chooses a number from PetsDict, then display a message describing the pet
+        elif int(Pet) in PetsDict:
+            TempPet = PetsDict[int(Pet)]
+            print(f"You have chosen {TempPet.GetPetName()}, the {TempPet.GetPetType()}. {TempPet.GetPetName()} is "
+                  f"{TempPet.GetPetAge()} years old. {TempPet.GetPetName()}'s owner is {TempPet.GetOwnerName()}. ")
             print()
-            continue
-except:
-    print(f"ERROR: Invalid Input!")
+            Continue = input("Would you like to [C]ontinue, [Q]uit, or [E]dit a pet?")
+
+            # If the player chooses to continue, allow them to loop back to list and choose a new pet
+            if Continue.upper() == 'C':
+                print()
+                ChoosePet()
+
+            # Exit program nicely, if the player decides to quit
+            elif Continue.upper() == 'Q':
+                print("Thank you for playing! Goodbye.")
+                sys.exit()
+
+            # If player chooses to edit, first ask which pet they'd like to edit
+            elif Continue.upper() == "E":
+                print()
+                Edit = input("Which pet would you like to edit?")
+
+                # Ask the player for the new name
+                if int(Edit) in PetsDict:
+                    TempPet = PetsDict[int(Edit)]
+                    print(f"You have chosen to edit {TempPet.GetPetName()}.")
+                    print()
+
+                    # Force the input, NewName, to be a string
+                    NewName = str(input("New name: "))
+
+                    # If no new name is chosen, then keep the original name of pet
+                    if NewName == '':
+                        print(f"You have chosen to not update the pet's name.")
+                        print()
+                        NewAge = int(input("New Age: "))
+
+                        # If no new age is chosen, then keep the original age of pet
+                        if NewAge == '':
+                            print(f"You have chosen to not update the pet's age.")
+                            print()
+
+                            # Print the list of pets with new names
+                            ListOfChoices()
+
+                        # If new age is chosen, make sure to update the Pet() object
+                        else:
+                            TempPet.SetPetAge(NewAge)
+                            print(f"You have updated the pet age for Pet ID = {TempPet.GetID()} to {TempPet.GetPetAge()}")
+                            print()
+                            ListOfChoices()
+
+                    # Update the Pet() object with new name
+                    else:
+                        TempPet.SetPetName(NewName)
+                        print(f"You have updated the pet name for Pet ID = {TempPet.GetID()} to '{TempPet.GetPetName()}'")
+                        print()
+                        NewAge = input("New Age: ")
+
+                        if NewAge == '':
+                            print(f"You have chosen to not update the pet's age.")
+                            print()
+                            ListOfChoices()
+
+                        else:
+                            NewAge = int(NewAge)
+                            TempPet.SetPetAge(NewAge)
+                            print(f"You have updated the pet age for Pet ID = {TempPet.GetID()} to {TempPet.GetPetAge()}")
+                            print()
+                            ListOfChoices()
+                else:
+                    print(f"Invalid Input! Thanks for playing.")
+                    sys.exit()
+            else:
+                print(f"Invalid Input! Thanks for playing.")
+                sys.exit()
+        else:
+            print(f"Invalid Input! Thanks for playing.")
+            sys.exit()
+
+    except ValueError as e:
+        print(f"Invalid input. Thanks for playing!")
+
+    except Exception as e:
+        print(f"{Pet} is an invalid choice.")
+        print(f"Error Message: {e}")
+
+# Play the game!
+ChoosePet()
