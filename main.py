@@ -10,9 +10,9 @@ import sys
 
 # Connect to the SQL database, Pets, and read in the appropriate data.
 try:
-    myConnection = pymysql.connect(host='localhost',
-                                   user='root',
-                                   password='Jenny8212',
+    myConnection = pymysql.connect(host='XXXXX',
+                                   user='XXXXX',
+                                   password='XXXXX',
                                    db='pets',
                                    charset='utf8mb4',
                                    cursorclass=pymysql.cursors.DictCursor)
