@@ -10,9 +10,9 @@ import sys
 
 # Connect to the SQL database, Pets, and read in the appropriate data.
 try:
-    myConnection = pymysql.connect(host='XXXXX',
-                                   user='XXXXX',
-                                   password='XXXXX',
+    myConnection = pymysql.connect(host='HOST',
+                                   user='USER',
+                                   password='PASSWORD',
                                    db='pets',
                                    charset='utf8mb4',
                                    cursorclass=pymysql.cursors.DictCursor)
@@ -57,10 +57,6 @@ except Exception as e:
     print(TypeError)
     print(e)
     print()
-
-# Close connection
-finally:
-    myConnection.close()
 
 # Print a nice list of the pets.
 print("*".center(30, "*"))
@@ -133,10 +129,24 @@ def ChoosePet():
                             # Print the list of pets with new names
                             ListOfChoices()
 
-                        # If new age is chosen, make sure to update the Pet() object
+                        # If new age is chosen, make sure to update the Pet() object in the database, Pets.
                         else:
                             TempPet.SetPetAge(NewAge)
                             print(f"You have updated the pet age for Pet ID = {TempPet.GetID()} to {TempPet.GetPetAge()}")
+
+                            # Write a SQL statement that updates the age for the Pet ID chosen in the database
+                            with myConnection.cursor() as cursor:
+                                SqlUpdateAge = """
+                                                   update
+                                                       pets
+                                                   set
+                                                       pets.age = %s
+                                                   where
+                                                       pets.id = %s
+                                                   """
+                                cursor.execute(SqlUpdateAge, ({TempPet.GetPetAge()}, {TempPet.GetID()}))
+                                myConnection.commit()
+
                             print()
                             ListOfChoices()
 
@@ -144,6 +154,20 @@ def ChoosePet():
                     else:
                         TempPet.SetPetName(NewName)
                         print(f"You have updated the pet name for Pet ID = {TempPet.GetID()} to '{TempPet.GetPetName()}'")
+
+                        # Update the database with the new name
+                        with myConnection.cursor() as cursor:
+                            SqlUpdateName = """
+                                               update
+                                                   pets
+                                               set
+                                                   pets.name = %s
+                                               where
+                                                   pets.id = %s
+                                               """
+                            cursor.execute(SqlUpdateName, ({TempPet.GetPetName()}, {TempPet.GetID()}))
+                            myConnection.commit()
+
                         print()
                         NewAge = input("New Age: ")
 
@@ -156,6 +180,20 @@ def ChoosePet():
                             NewAge = int(NewAge)
                             TempPet.SetPetAge(NewAge)
                             print(f"You have updated the pet age for Pet ID = {TempPet.GetID()} to {TempPet.GetPetAge()}")
+
+                            # Update the database with the new age
+                            with myConnection.cursor() as cursor:
+                                SqlUpdateFinal = """
+                                                                          update
+                                                                              pets
+                                                                          set
+                                                                              pets.age = %s
+                                                                          where
+                                                                              pets.id = %s
+                                                                          """
+                                cursor.execute(SqlUpdateFinal, ({TempPet.GetPetAge()}, {TempPet.GetID()}))
+                                myConnection.commit()
+
                             print()
                             ListOfChoices()
                 else:
@@ -177,3 +215,6 @@ def ChoosePet():
 
 # Play the game!
 ChoosePet()
+
+# Close connection
+myConnection.close()
